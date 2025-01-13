@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>五子棋</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 模态框样式 */
+        .history-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .history-item:hover {
+            background: #f0f0f0;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            padding: 5px 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        /* 历史棋盘样式 */
+        .history-board {
+            display: grid;
+            grid-template-columns: repeat(19, 1fr);
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+            background-color: #DEB887;
+            gap: 1px;
+        }
+
+        .history-cell {
+            width: 100%;
+            padding-bottom: 100%;
+            position: relative;
+            background-color: #DEB887;
+            border: 1px solid #000;
+        }
+
+        .history-piece {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            top: 10%;
+            left: 10%;
+        }
+
+        .history-piece.black {
+            background-color: #000;
+        }
+
+        .history-piece.white {
+            background-color: #fff;
+            border: 1px solid #000;
+        }
+
+        /* 音乐控制样式 */
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .volume-slider {
+            width: 100px;
+            margin: 0 10px;
+        }
+
+        .music-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .music-btn.paused {
+            background: #f44336;
+        }
+
+        /* 音乐设置页面样式 */
+        .music-settings {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .music-header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .music-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .control-item {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .volume-control {
+            width: 200px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 添加统一的按钮样式 */
+        .cover button {
+            width: 200px;  /* 统一按钮宽度 */
+            height: 50px;  /* 统一按钮高度 */
+            font-size: 18px;  /* 统一字体大小 */
+            margin: 10px 0;  /* 统一按钮间距 */
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .cover button:hover {
+            background-color: #45a049;
+        }
+
+        /* 移除之前的单独按钮样式 */
+    </style>
+</head>
+<body>
+    <audio id="bgMusic" loop>
+        <source src="path/to/your/music.mp3" type="audio/mp3">
+    </audio>
+    
+    <div id="cover" class="cover">
+        <h1>五子棋</h1>
+        <button id="startButton" class="start-button">开始游戏</button>
+        <button id="historyButton" class="history-button">战绩</button>
+        <button id="musicSettingsButton" class="music-button">音乐设置</button>
+    </div>
+
+    <div id="gameContainer" class="game-container hidden">
+        <div class="game-header">
+            <button class="back-button" id="backButton">返回首页</button>
+            <div class="game-info">
+                <span class="info-item">当前玩家：<span id="current-player">黑子</span></span>
+                <span class="info-item">回合数：<span id="move-count">0</span></span>
+            </div>
+        </div>
+        <div id="board" class="board"></div>
+    </div>
+
+    <div id="gameOverModal" class="modal">
+        <h2>游戏结束</h2>
+        <p><span id="winner-text"></span></p>
+        <p>游戏时长：<span id="game-time"></span>秒</p>
+        <p>总步数：<span id="total-moves"></span></p>
+        <button onclick="resetGame()">重新开始</button>
+    </div>
+
+    <script src="gomoku.js"></script>
+</body>
+</html>
